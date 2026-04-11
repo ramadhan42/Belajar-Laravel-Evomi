@@ -2,32 +2,52 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| Public Routes (Akses Tanpa Login)
 |--------------------------------------------------------------------------
 */
 
-// Grouping route untuk versi API (opsional, tapi disarankan)
-Route::prefix('v1')->group(function () {
+// Auth
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
-    // Route Resource untuk Products
-    // Ini otomatis mencakup: GET, POST, GET {id}, PUT, dan DELETE
-    Route::apiResource('products', ProductController::class);
+// Produk Evomi
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
 
-    // Jika Anda ingin menambah route khusus di luar CRUD standar
-    // Contoh: Mencari produk berdasarkan brand
-    Route::get('products/brand/{brand_id}', [ProductController::class, 'getByBrand']);
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes (Harus Login / Menggunakan Sanctum)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth:sanctum')->group(function () {
     
-});
+    // User Profile & Logout
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+    Route::post('/logout', [AuthController::class, 'logout']);
 
-// Route cadangan untuk mengecek koneksi API
-Route::get('/health-check', function () {
-    return response()->json([
-        'status' => 'online',
-        'message' => 'Evomi API is running smoothly',
-        'timestamp' => now()
-    ]);
+    // Keranjang Belanja (Cart)
+    Route::prefix('cart')->group(function () {
+        Route::get('/', [CartController::class, 'index']);          // Lihat isi keranjang
+        Route::post('/add', [CartController::class, 'addToCart']); // Tambah ke keranjang
+        Route::delete('/{id}', [CartController::class, 'remove']); // Hapus satu item
+        Route::delete('/', [CartController::class, 'clear']);      // Kosongkan keranjang
+    });
+
+    // Pesanan (Orders)
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index']);        // Riwayat pesanan user
+        Route::get('/{id}', [OrderController::class, 'show']);     // Detail pesanan tertentu
+        Route::post('/checkout', [OrderController::class, 'checkout']); // Proses beli
+    });
 });
