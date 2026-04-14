@@ -29,6 +29,7 @@ class User extends Authenticatable
         'username', // Tambahkan ini
         'email',
         'password',
+        'is_admin',
     ];
 
     /**

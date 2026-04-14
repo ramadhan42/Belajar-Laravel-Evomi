@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Validator;
 class AuthController extends Controller
 {
     // Fungsi Register untuk User Baru
-    // app/Http/Controllers/AuthController.php
 
     public function register(Request $request)
     {
