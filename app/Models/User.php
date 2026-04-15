@@ -29,6 +29,7 @@ class User extends Authenticatable
         'username', // Tambahkan ini
         'email',
         'password',
+        'image', // Tambahkan image di sini
         'is_admin',
     ];
 

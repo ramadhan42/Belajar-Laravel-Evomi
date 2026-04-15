@@ -32,12 +32,12 @@ class ProductController extends Controller
             // Membuat nama file: nama-produk-timestamp.ekstensi
             // Timestamp ditambahkan agar tidak bentrok jika ada nama produk yang sama
             $extension = $file->getClientOriginalExtension();
-            $fileName = Str::slug($request->nama).'-'.time().'.'.$extension;
+            $fileName = Str::slug($request->nama) . '-' . time() . '.' . $extension;
 
             // Simpan dengan nama file kustom menggunakan storeAs
             $path = $file->storeAs('products', $fileName, 'public');
 
-            $data['image_url'] = asset('storage/'.$path);
+            $data['image_url'] = asset('storage/' . $path);
         }
 
         $product = Product::create($data);
@@ -77,11 +77,11 @@ class ProductController extends Controller
             // Gunakan nama produk baru (atau yang lama jika tidak diubah) untuk nama file
             $nameForFile = $request->nama ?: $product->nama;
             $extension = $file->getClientOriginalExtension();
-            $fileName = Str::slug($nameForFile).'-'.time().'.'.$extension;
+            $fileName = Str::slug($nameForFile) . '-' . time() . '.' . $extension;
 
             $path = $file->storeAs('products', $fileName, 'public');
 
-            $data['image_url'] = asset('storage/'.$path);
+            $data['image_url'] = asset('storage/' . $path);
         }
 
         $product->update($data);

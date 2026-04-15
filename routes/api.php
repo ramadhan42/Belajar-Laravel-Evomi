@@ -29,11 +29,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Produk Evomi
 Route::prefix('products')->group(function () {
-    Route::get('/', [ProductController::class, 'index']);         // Read All
-    Route::post('/', [ProductController::class, 'store']);        // Create
-    Route::get('{id}', [ProductController::class, 'show']);       // Read Detail
-    Route::post('{id}', [ProductController::class, 'update']);    // Update
-    Route::delete('{id}', [ProductController::class, 'destroy']); // Delete
+    Route::get('/', [ProductController::class, 'index']);          // Read All
+    Route::post('/', [ProductController::class, 'store']);         // Create
+    Route::get('{id}', [ProductController::class, 'show']);        // Read Detail
+    Route::post('{id}', [ProductController::class, 'update']);     // Update
+    Route::delete('{id}', [ProductController::class, 'destroy']);  // Delete
 });
 
 /*
@@ -53,9 +53,9 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
 
     // Pesanan (Orders)
     Route::prefix('orders')->group(function () {
-        Route::get('/', [OrderController::class, 'index']);             // Riwayat pesanan user
-        Route::get('/{id}', [OrderController::class, 'show']);          // Detail pesanan tertentu
-        Route::post('/checkout', [OrderController::class, 'checkout']); // Proses beli
+        Route::get('/', [OrderController::class, 'index']);              // Riwayat pesanan user
+        Route::get('/{id}', [OrderController::class, 'show']);           // Detail pesanan tertentu
+        Route::post('/checkout', [OrderController::class, 'checkout']);  // Proses beli
 
         // --- Order Routes Baru ---
         // Update pesanan (untuk edit status atau alamat)
@@ -95,9 +95,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-    
+
     Route::put('/users/{id}', [UserController::class, 'update']);
-    
+
+    // Detail, Update, dan Delete satu user
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Keranjang Belanja (Cart)

@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -22,36 +24,6 @@ class UserController extends Controller
             'message' => 'Data semua user berhasil diambil',
             'data' => $users
         ], 200);
-    }
-
-    /**
-     * CREATE: Menambahkan user baru
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username',
-            'email' => 'required|string|email|max:255|unique:users,email',
-            'password' => 'required|string|min:8',
-            'is_admin' => 'boolean'
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'username' => $request->username,
-            'email' => $request->email,
-            // Password WAJIB di-hash sebelum masuk ke database
-            'password' => Hash::make($request->password),
-            // Default ke 0 (bukan admin) jika tidak dikirimkan
-            'is_admin' => $request->is_admin ?? 0,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User berhasil ditambahkan',
-            'data' => $user
-        ], 201);
     }
 
     /**
@@ -75,46 +47,99 @@ class UserController extends Controller
     }
 
     /**
-     * UPDATE: Memperbarui data user
+     * Store a newly created user (Register / Admin Create).
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name'     => 'required|string|max:255',
+            'username' => 'required|string|unique:users,username',
+            'email'    => 'required|string|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'image'    => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Max 2MB
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $imagePath = 'default-avatar.png'; // Default jika tidak ada upload
+
+        // Logika Upload Image
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            // Simpan ke storage/app/public/profiles
+            $image->storeAs('public/profiles', $imageName);
+            $imagePath = $imageName;
+        }
+
+        $user = User::create([
+            'name'     => $request->name,
+            'username' => $request->username,
+            'email'    => $request->email,
+            'password' => Hash::make($request->password),
+            'image'    => $imagePath,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User created successfully',
+            'data'    => $user
+        ], 201);
+    }
+
+    /**
+     * Update the specified user (Profile/Identity Update).
      */
     public function update(Request $request, $id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
 
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan'
-            ], 404);
-        }
-
-        // Validasi data. Menggunakan 'sometimes' agar validasi hanya berjalan jika field tersebut dikirim.
-        // Rule::unique()->ignore() penting agar email/username milik user ini tidak dianggap duplikat saat update.
-        $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'username' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'password' => 'sometimes|string|min:8',
-            'is_admin' => 'sometimes|boolean'
+        $validator = Validator::make($request->all(), [
+            'name'             => 'required|string|max:255',
+            'username'         => 'required|string|unique:users,username,' . $user->id,
+            'current_password' => 'nullable|required_with:new_password',
+            'new_password'     => 'nullable|min:8|confirmed',
+            'image'            => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        if ($request->has('name')) $user->name = $request->name;
-        if ($request->has('username')) $user->username = $request->username;
-        if ($request->has('email')) $user->email = $request->email;
-        if ($request->has('is_admin')) $user->is_admin = $request->is_admin;
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
 
-        // Jika password ikut diupdate, pastikan di-hash ulang
-        if ($request->has('password')) {
-            $user->password = Hash::make($request->password);
+        // 1. Update Identity Dasar
+        $user->name = $request->name;
+        $user->username = $request->username;
+
+        // 2. Logika Update Password
+        if ($request->filled('new_password')) {
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json(['message' => 'Current password tidak cocok.'], 422);
+            }
+            $user->password = Hash::make($request->new_password);
+        }
+
+        // 3. Logika Update Image
+        if ($request->hasFile('image')) {
+            // Hapus foto lama jika bukan default
+            if ($user->image && $user->image !== 'default-avatar.png') {
+                Storage::delete('public/profiles/' . $user->image);
+            }
+
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->storeAs('public/profiles', $imageName);
+            $user->image = $imageName;
         }
 
         $user->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Data user berhasil diperbarui',
-            'data' => $user
-        ], 200);
+            'message' => 'Profile Evomi updated successfully!',
+            'data'    => $user
+        ]);
     }
 
     /**
