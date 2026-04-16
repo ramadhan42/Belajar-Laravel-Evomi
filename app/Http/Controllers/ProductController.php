@@ -51,14 +51,12 @@ class ProductController extends Controller
     public function show($id)
     {
         $product = Product::with(['notes', 'characters'])->find($id);
-
         return $product ? response()->json($product) : response()->json(['message' => 'Not Found'], 404);
     }
 
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
-
         $request->validate([
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
@@ -80,7 +78,6 @@ class ProductController extends Controller
             $fileName = Str::slug($nameForFile) . '-' . time() . '.' . $extension;
 
             $path = $file->storeAs('products', $fileName, 'public');
-
             $data['image_url'] = asset('storage/' . $path);
         }
 
@@ -94,8 +91,16 @@ class ProductController extends Controller
 
     public function destroy($id)
     {
-        Product::destroy($id);
+        $product = Product::findOrFail($id);
 
-        return response()->json(['message' => 'Deleted']);
+        // Hapus gambar jika ada
+        if ($product->image_url) {
+            $path = str_replace(asset('storage/'), '', $product->image_url);
+            Storage::disk('public')->delete($path);
+        }
+
+        $product->delete();
+
+        return response()->json(['message' => 'Product deleted successfully']);
     }
 }

@@ -55,6 +55,7 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);              // Riwayat pesanan user
         Route::get('/{id}', [OrderController::class, 'show']);           // Detail pesanan tertentu
+        // Route::get('/{id}', [OrderController::class, 'adminShow']); // Detail pesanan untuk admin
         Route::post('/checkout', [OrderController::class, 'checkout']);  // Proses beli
 
         // --- Order Routes Baru ---

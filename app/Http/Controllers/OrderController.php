@@ -35,23 +35,18 @@ class OrderController extends Controller
     }
 
     /**
-     * Menampilkan detail pesanan spesifik beserta item di dalamnya
+     * Menampilkan detail pesanan untuk Admin (Bisa melihat milik siapa saja)
      */
-    public function show($id)
+    public function adminShow($id)
     {
-        $userId = Auth::id();
-
-        // Mencari order berdasarkan ID dan memastikan milik user yang login
-        // Eager loading 'details.product' untuk mengambil data produk sekaligus
-        $order = Order::with(['details.product'])
-            ->where('user_id', $userId)
-            ->where('id', $id)
-            ->first();
+        // Eager loading 'details.product' dan 'user' untuk melihat siapa yang membeli
+        $order = Order::with(['details.product', 'user'])
+            ->find($id);
 
         if (!$order) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Pesanan tidak ditemukan atau Anda tidak memiliki akses.'
+                'message' => 'Pesanan tidak ditemukan.'
             ], 404);
         }
 
@@ -59,6 +54,36 @@ class OrderController extends Controller
             'status' => 'success',
             'data' => $order
         ]);
+    }
+
+    /**
+     * Menampilkan detail pesanan spesifik beserta item di dalamnya
+     */
+    public function show($id)
+    {
+        try {
+            // Gunakan find() langsung pada ID
+            // Pastikan relasi 'user' ada di model Order
+            // Pastikan relasi 'details' ada di model Order dan 'product' ada di model OrderDetail
+            $order = Order::with(['user', 'details.product'])->find($id);
+
+            if (!$order) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Order dengan ID ' . $id . ' tidak ditemukan di database.'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $order
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function checkout(Request $request)
