@@ -2,53 +2,58 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Product;
+use App\Models\ProductNote;
+use App\Models\ProductCharacter;
 use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $json = file_get_contents(base_path('evomi.json'));
-        $data = json_decode($json, true);
+        $product = Product::create([
+            'id' => 'PRD-EVOMI-001',
+            'brand_id' => 'EVOMI-BR',
+            'nama' => 'Evomi Signature Noir',
+            'deskripsi' => 'A sophisticated glass-bottled fragrance with a minimalist vibe, designed for modern elegance.',
+            'ukuran' => '100ml',
+            'konsentrasi' => 'Extrait de Parfum',
+            'gender' => 'Unisex',
+            'ketahanan' => '12+ Hours',
+            'sillage' => 'Strong',
+            'proyeksi' => '2 Meters',
+            'vibe' => 'Dark, Mysterious, Elegant',
+            'image_url' => 'evomi-noir.png',
+            'harga_retail' => 450000,
+            'stok_tersedia' => 50,
+            'status_stok' => 'Available Stock'
+        ]);
 
-        $brand = \App\Models\Brand::create(['nama' => $data['brand']]);
+        // Seed Notes (Olfactory Pyramid)
+        $notes = [
+            ['jenis' => 'top', 'note' => 'Bergamot'],
+            ['jenis' => 'top', 'note' => 'Black Pepper'],
+            ['jenis' => 'middle', 'note' => 'Rose Damascena'],
+            ['jenis' => 'middle', 'note' => 'Oud'],
+            ['jenis' => 'base', 'note' => 'Vanilla'],
+            ['jenis' => 'base', 'note' => 'Amber'],
+        ];
 
-        foreach ($data['kategori_produk'] as $item) {
-            $product = \App\Models\Product::create([
-                'id' => $item['id'],
-                'brand_id' => $brand->id,
-                'nama' => $item['nama'],
-                'deskripsi' => $item['deskripsi'],
-                'ukuran' => $item['spesifikasi']['ukuran'],
-                'konsentrasi' => $item['spesifikasi']['konsentrasi'],
-                'gender' => $item['spesifikasi']['gender'],
-                'ketahanan' => $item['spesifikasi']['performa']['ketahanan'],
-                'sillage' => $item['spesifikasi']['performa']['sillage'],
-                'proyeksi' => $item['spesifikasi']['performa']['proyeksi'],
-                'vibe' => $item['profil_aroma']['vibe'],
-                'image_url' => $item['media']['image_url'],
-                'artboard_ref' => $item['media']['artboard_ref'],
-                'harga_retail' => $item['transaksi']['harga_retail'],
-                'stok_tersedia' => $item['transaksi']['inventaris']['stok_tersedia'],
-                'status_stok' => $item['transaksi']['inventaris']['status'],
+        foreach ($notes as $note) {
+            ProductNote::insert([
+                'product_id' => $product->id,
+                'jenis' => $note['jenis'],
+                'note' => $note['note']
             ]);
-
-            // Insert Notes
-            foreach ($item['profil_aroma']['piramida_notes'] as $tipe => $notes) {
-                $type = str_replace('_notes', '', $tipe); // top_notes -> top
-                foreach ($notes as $noteName) {
-                    $product->notes()->create(['tipe_note' => $type, 'nama_note' => $noteName]);
-                }
-            }
-
-            // Insert Characters
-            foreach ($item['profil_aroma']['karakter'] as $char) {
-                $product->characters()->create(['nama_karakter' => $char]);
-            }
         }
+
+        // Seed Characters
+        ProductCharacter::insert([
+            ['product_id' => $product->id, 'karakter' => 'Sophisticated'],
+            ['product_id' => $product->id, 'karakter' => 'Night-time'],
+        ]);
+
+        // Generate additional random products
+        Product::factory(10)->create();
     }
 }
