@@ -13,11 +13,35 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
 
+use App\Http\Controllers\Api\ParfumController;
+use App\Http\Controllers\Api\UserMongoController;
+
+
 /*
 |--------------------------------------------------------------------------
 | Public Routes (Akses Tanpa Login)
 |--------------------------------------------------------------------------
 */
+
+
+Route::prefix('users-mongo')->group(function () {
+    Route::get('/', [UserMongoController::class, 'index']);      // Get semua user
+    Route::get('/{id}', [UserMongoController::class, 'show']);   // Get user by ID
+    Route::put('/{id}', [UserMongoController::class, 'update']); // Update user
+    Route::delete('/{id}', [UserController::class, 'destroy']); // Delete user
+    
+    // Route untuk Create User
+    Route::post('/', [UserMongoController::class, 'store']);
+});
+
+Route::prefix('parfum')->group(function () {
+    Route::get('/', [ParfumController::class, 'index']);
+    Route::post('/', [ParfumController::class, 'store']);
+    Route::get('/{id}', [ParfumController::class, 'show']);
+    Route::post('/{id}', [ParfumController::class, 'update']);
+    Route::delete('/{id}', [ParfumController::class, 'destroy']);
+});
+
 
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
