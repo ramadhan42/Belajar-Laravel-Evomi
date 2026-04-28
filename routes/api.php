@@ -11,10 +11,24 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http; // <--- Tambahkan baris ini
 
 
 use App\Http\Controllers\Api\ParfumController;
 use App\Http\Controllers\Api\UserMongoController;
+
+// Di Laravel: routes/api.php
+Route::get('/midtrans/status/{orderId}', function ($orderId) {
+    $serverKey = "Mid-server-F7eD7UaW10r3-CFaC16OBs4U:"; // Pastikan ada titik dua (:) di akhir untuk Basic Auth
+    $base64Key = base64_encode($serverKey);
+
+    $response = Http::withHeaders([
+        'Authorization' => 'Basic ' . $base64Key,
+        'Accept' => 'application/json',
+    ])->get("https://api.sandbox.midtrans.com/v2/{$orderId}/status");
+
+    return $response->json();
+});
 
 
 /*
@@ -22,17 +36,6 @@ use App\Http\Controllers\Api\UserMongoController;
 | Public Routes (Akses Tanpa Login)
 |--------------------------------------------------------------------------
 */
-
-
-Route::prefix('users-mongo')->group(function () {
-    Route::get('/', [UserMongoController::class, 'index']);      // Get semua user
-    Route::get('/{id}', [UserMongoController::class, 'show']);   // Get user by ID
-    Route::put('/{id}', [UserMongoController::class, 'update']); // Update user
-    Route::delete('/{id}', [UserController::class, 'destroy']); // Delete user
-    
-    // Route untuk Create User
-    Route::post('/', [UserMongoController::class, 'store']);
-});
 
 Route::prefix('parfum')->group(function () {
     Route::get('/', [ParfumController::class, 'index']);
@@ -120,7 +123,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::put('/users/{id}', [UserController::class, 'update']);
-
+    
     // ✅ Ubah menjadi POST untuk logout agar sesuai dengan praktik RESTful
 
     // Detail, Update, dan Delete satu user
