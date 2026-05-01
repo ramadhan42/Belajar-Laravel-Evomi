@@ -1,35 +1,32 @@
 <?php
 
-use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminAuthController;
+use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\ProductController;
-use Illuminate\Http\Middleware\HandleCors;
+use App\Http\Controllers\Api\ParfumController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UserController;
+use Illuminate\Http\Middleware\HandleCors;
+use Illuminate\Http\Request; // <--- Tambahkan baris ini
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http; // <--- Tambahkan baris ini
-
-
-use App\Http\Controllers\Api\ParfumController;
-use App\Http\Controllers\Api\UserMongoController;
 
 // Di Laravel: routes/api.php
 Route::get('/midtrans/status/{orderId}', function ($orderId) {
-    $serverKey = "Mid-server-F7eD7UaW10r3-CFaC16OBs4U:"; // Pastikan ada titik dua (:) di akhir untuk Basic Auth
+    $serverKey = 'Mid-server-F7eD7UaW10r3-CFaC16OBs4U:'; // Pastikan ada titik dua (:) di akhir untuk Basic Auth
     $base64Key = base64_encode($serverKey);
 
     $response = Http::withHeaders([
-        'Authorization' => 'Basic ' . $base64Key,
+        'Authorization' => 'Basic '.$base64Key,
         'Accept' => 'application/json',
     ])->get("https://api.sandbox.midtrans.com/v2/{$orderId}/status");
 
     return $response->json();
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +41,6 @@ Route::prefix('parfum')->group(function () {
     Route::post('/{id}', [ParfumController::class, 'update']);
     Route::delete('/{id}', [ParfumController::class, 'destroy']);
 });
-
 
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
@@ -75,6 +71,15 @@ Route::middleware([HandleCors::class])->group(function () {
 
 // routes/api.php
 Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+
+    // Mengambil pesan dengan user/admin tertentu (masukkan ID user lawan chat di URL)
+    // Route::get('/chats/{contact_id}', [ChatController::class, 'getMessages']);
+
+    // // Mengirim pesan baru
+    // Route::post('/chats', [ChatController::class, 'sendMessage']);
+
+    // // Menandai pesan telah dibaca
+    // Route::post('/chats/read/{sender_id}', [ChatController::class, 'markAsRead']);
 
     Route::get('/dashboard-stats', [DashboardController::class, 'index']); // dashboard umum untuk admin dan user, bisa diakses setelah login admin
 
@@ -108,14 +113,17 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json([
             'success' => true,
-            'data' => $request->user()
+            'data' => $request->user(),
         ]);
     });
 });
 
-
 // Tambahkan CRUD untuk produk dan brand di sini
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/chats/{contact_id}', [ChatController::class, 'getMessages']);
+    Route::post('/chats', [ChatController::class, 'sendMessage']);
+    Route::get('/conversations', [ChatController::class, 'getConversations']);
 
     // User Profile & Logout
     Route::get('/user', function (Request $request) {
@@ -123,7 +131,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::put('/users/{id}', [UserController::class, 'update']);
-    
+
     // ✅ Ubah menjadi POST untuk logout agar sesuai dengan praktik RESTful
 
     // Detail, Update, dan Delete satu user
@@ -151,5 +159,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Menghapus pesanan
         Route::delete('/{id}', [OrderController::class, 'destroy']);
+    });
+
+    // Chat Routes
+    Route::prefix('chat')->group(function () {
+        Route::get('/messages/{contact_id}', [ChatController::class, 'getMessages']);    // Ambil riwayat chat dengan kontak tertentu
+        Route::post('/send', [ChatController::class, 'sendMessage']);                   // Kirim pesan baru
+        Route::put('/read/{sender_id}', [ChatController::class, 'markAsRead']);         // Tandai pesan telah dibaca
     });
 });
